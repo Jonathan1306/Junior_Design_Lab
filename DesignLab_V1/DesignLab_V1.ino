@@ -14,6 +14,15 @@
 const int pinTemp = A0;
 const int pin2Temp = A1;
 
+//Define the pin of the push button
+const int buttonPin = 2;
+
+//Define Start/Stop Recording LED
+const int startLED = 3;
+
+//Define SD Eject LED
+const int ejectLED = 4;
+
 // Define the B-value of the thermistors.
 // This value is a property of the thermistor used in the Grove - Temperature Sensor,
 // and used to convert from the analog value it measures and a temperature value.
@@ -26,10 +35,51 @@ void setup()
 {
     // set up the LCD's number of columns and rows:
     lcd.begin(16, 2);
+
+    //set up button
+    pinMode(buttonPin, INPUT);
+    
+    //set up LEDs
+    //pinMode(startLED, OUTPUT);
+    //pinMode(ejectLED, OUTPUT);
 }
 
 void loop()
 {
+  //Enter Idle State on Startup
+  idleState();   
+}
+
+//*****IDLE STATE*****//   
+void idleState()
+{   
+  //Change LCD Output
+  lcd.clear();
+  lcd.print("IDLE STATE");
+  lcd.setCursor(0, 1);
+  lcd.print("PUSH TO START");
+  
+  //Toggle LEDs
+  digitalWrite(startLED,HIGH);
+  digitalWrite(ejectLED,LOW);  
+  
+  //Wait for button push
+  //delay(5000);
+  while (!digitalRead(buttonPin))
+  {}
+  recordingState();
+  //**Maybe add jump to step 1 in case gets past this 
+}
+
+//*****RECORDING STATE*****//
+void recordingState()
+{  
+  //Toggle LEDs
+  digitalWrite(startLED,LOW);
+  digitalWrite(ejectLED,HIGH); 
+   
+  while(!digitalRead(buttonPin))
+  {    
     // Get the (raw) value of the temperature sensors.
     int val = analogRead(pinTemp);
     int val2 = analogRead(pin2Temp);
@@ -53,6 +103,9 @@ void loop()
     lcd.print(temperature2);
     
     // Wait one second between measurements.
-    delay(1000);
+    delay(1000); 
+  }
+  
+  idleState();
 }
 

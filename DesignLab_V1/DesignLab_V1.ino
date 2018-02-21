@@ -40,8 +40,8 @@ void setup()
     pinMode(buttonPin, INPUT);
     
     //set up LEDs
-    //pinMode(startLED, OUTPUT);
-    //pinMode(ejectLED, OUTPUT);
+    pinMode(startLED, OUTPUT);
+    pinMode(ejectLED, OUTPUT);
 }
 
 void loop()
@@ -60,14 +60,20 @@ void idleState()
   lcd.print("PUSH TO START");
   
   //Toggle LEDs
-  digitalWrite(startLED,HIGH);
-  digitalWrite(ejectLED,LOW);  
+  digitalWrite(startLED,LOW);
+  digitalWrite(ejectLED,HIGH);  
   
   //Wait for button push
-  //delay(5000);
+  delay(1000);
   while (!digitalRead(buttonPin))
-  {}
+  {
+    //Do nothing 
+  }
+  
+  //Enter Recording State
+  delay(1000);
   recordingState();
+  
   //**Maybe add jump to step 1 in case gets past this 
 }
 
@@ -75,8 +81,8 @@ void idleState()
 void recordingState()
 {  
   //Toggle LEDs
-  digitalWrite(startLED,LOW);
-  digitalWrite(ejectLED,HIGH); 
+  digitalWrite(startLED,HIGH);
+  digitalWrite(ejectLED,LOW); 
    
   while(!digitalRead(buttonPin))
   {    
@@ -105,7 +111,6 @@ void recordingState()
     // Wait one second between measurements.
     delay(1000); 
   }
-  
   idleState();
 }
 

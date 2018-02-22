@@ -9,6 +9,9 @@
 //Includes
 #include <Wire.h>
 #include "rgb_lcd.h"
+#include <SPI.h>
+#include <SD.h>
+#include <stdlib.h>
 
 // Define the pin to which the temperature sensor is connected.
 const int pinTemp = A0;
@@ -35,6 +38,7 @@ void setup()
 {
     // set up the LCD's number of columns and rows:
     lcd.begin(16, 2);
+    Serial.begin(9600);//TEMP
 
     //set up button
     pinMode(buttonPin, INPUT);
@@ -42,6 +46,16 @@ void setup()
     //set up LEDs
     pinMode(startLED, OUTPUT);
     pinMode(ejectLED, OUTPUT);
+
+    // see if the card is present and can be initialized:
+    if (!SD.begin(4)) {
+      //Display error message
+      lcd.print("SD CARD ERROR");
+      
+      //Wait Indefinitely
+      while (1);
+    }
+    Serial.println("card initialized.");
 }
 
 void loop()
@@ -50,7 +64,6 @@ void loop()
   idleState();   
 }
 
-//*****IDLE STATE*****//   
 void idleState()
 {   
   //Change LCD Output
@@ -77,30 +90,68 @@ void idleState()
   //**Maybe add jump to step 1 in case gets past this 
 }
 
-//*****RECORDING STATE*****//
 void recordingState()
 {  
+   // Clear the screen
+   lcd.clear();
+  
   //Toggle LEDs
   digitalWrite(startLED,HIGH);
   digitalWrite(ejectLED,LOW); 
    
   while(!digitalRead(buttonPin))
   {    
+    // String for assembling the data to log:
+    String dataString = "";
+    
+    //Buffer for temporary strings
+    String buff = "";
+    
     // Get the (raw) value of the temperature sensors.
     int val = analogRead(pinTemp);
     int val2 = analogRead(pin2Temp);
 
     // Determine the current resistance of the thermistors based on the sensor values.
-    float resistance = (float)(1023-val)*R0/val;
-    float resistance2 = (float)(1023-val2)*R0/val2;
+    float resistance = (float)(1023.0-val)*R0/val;
+    float resistance2 = (float)(1023.0-val2)*R0/val2;
 
-    // Calculate the temperatures based on the resistance values.
+    // Calculate the temperatures based on the resistance values and append to log string.
     float temperature = 1/(log(resistance/R0)/B+1/298.15)-273.15;
-    float temperature2 = 1/(log(resistance2/R0)/B+1/298.15)-273.15;
-
-    // clear the screen
-    lcd.clear();
+    dataString += String(val); //Raw Data
+    dataString += String(",");
     
+    float temperature2 = 1/(log(resistance2/R0)/B+1/298.15)-273.15;
+    dataString += String(val2); //Raw Data
+    dataString += String(",");
+
+    /*
+    // Calculate Power Consumption and lappend to log string
+    //get current sensor reading
+    //Calculate Power
+    //Append to log string
+    dataString += String(Power);
+    dataString += String(",");
+    */
+    
+    //Log to SD Card
+    File dataFile = SD.open("datalog.txt", FILE_WRITE);
+
+    // If the file is available, write to it
+    if (dataFile) {
+      dataFile.println(dataString);
+      dataFile.close();
+      Serial.println(dataString);//TEMP
+    }
+    // If the file isn't open
+    else 
+    {
+      //Display error message
+      lcd.print("LOGGING ERROR");
+      
+      //Wait indefinitely
+      while(true){};
+    }
+  
     //Output the Temperatures to the LCD
     lcd.print("FRIDGE: ");
     lcd.print(temperature);
@@ -112,5 +163,4 @@ void recordingState()
     delay(1000); 
   }
   idleState();
-}
-
+} 

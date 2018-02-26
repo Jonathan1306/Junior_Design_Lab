@@ -172,13 +172,17 @@ void recordingState()
     // If the file isn't open
     else 
     {
+      // Clear the screen
+      lcd.clear();
       //Display error message
       lcd.print("LOGGING ERROR");
       
       //Wait indefinitely
       while(true){};
     }
-  
+
+    // Clear the screen
+    lcd.clear();
     //Output the Temperatures to the LCD
     lcd.print("FRIDGE: ");
     lcd.print(temperature);

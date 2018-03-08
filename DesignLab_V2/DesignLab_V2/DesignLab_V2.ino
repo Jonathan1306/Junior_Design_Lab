@@ -20,6 +20,9 @@ const int pin2Temp = A1;
 //Define the pin of the push button
 const int buttonPin = 2;
 
+//Define the pin for the current sensor
+const int sensorIn = A2;
+
 //Define Start/Stop Recording LED
 const int startLED = 3;
 
@@ -27,10 +30,25 @@ const int startLED = 3;
 const int ejectLED = 4;
 
 //Define sensitivity of the ACS712
-float sensitivity = 1850;
+const int sensitivity = 185;
+
+//Define Voltage for ACS712 Output
+double Voltage = 0;
+
+//Define RMS Voltage for ACS712 Output
+double VRMS = 0;
+
+//Define AmpsRMS for ACS712 Output
+double AmpsRMS = 0;
+
+//Define Power consumption for connected load.
+double Power = 0;
+
+//Define wall output voltage for power calculation.
+double Vwall = 117.0;
 
 //Define reference voltage of the ACS712
-float Vref = 2500;
+//float Vref = 2500;
 
 // Define the B-value of the thermistors.
 // This value is a property of the thermistor used in the Grove - Temperature Sensor,
@@ -57,6 +75,8 @@ void setup()
     if (!SD.begin(4)) {
       //Display error message
       lcd.print("SD CARD ERROR");
+      lcd.setCursor(0, 1);
+      lcd.print("CARD NOT FOUND");
       
       //Wait Indefinitely
       while (1);
@@ -123,7 +143,9 @@ void recordingState()
 
     // Calculate the temperatures based on the resistance values and append to log string.
     float temperature = 1/(log(resistance/R0)/B+1/298.15)-273.15;
+    
     dataString += String(val); //Raw Data
+    Serial.print(temperature);
     dataString += String(",");
     
     float temperature2 = 1/(log(resistance2/R0)/B+1/298.15)-273.15;
@@ -131,34 +153,17 @@ void recordingState()
     dataString += String(",");
 
     //CURRENT SENSOR//
-    unsigned int x=0;
-    float AcsValue=0.0,Samples=0.0,AvgAcs=0.0,AcsValueF=0.0;
+    Voltage = getVPP();
+    VRMS = (Voltage/2.0) *0.707; 
+    AmpsRMS = (VRMS * 1000)/sensitivity;
+    Power = AmpsRMS * Vwall;
     
-    //Get average of 150 current sensor readings
-    for (int x = 0; x < 150; x++)
-    { 
-      //Get 150 samples
-      AcsValue = analogRead(A0);     //Read current sensor values   
-      Samples = Samples + AcsValue;  //Add samples together
-      delay (3); // let ADC settle before next sample 3ms
-    }
-    //Calculate Voltage, Current and Power
-    AvgAcs=Samples/150.0;//Taking Average of Samples
-    float Voltage = (AvgAcs / 1024.0) * 5000; // Gets you mV
-    float Current = ((Voltage - (Vref-700))/sensitivity);
-    int Power = Voltage*Current;
+    //Print Values DEBUGGING w/serial monitor only
+    //Serial.print(AmpsRMS);
+    //Serial.println(" Amps RMS");
 
-    //Print Values
-    Serial.print("Raw Value = " ); // shows pre-scaled value 
-    Serial.print(AvgAcs); 
-    Serial.print("\t Voltage = "); // shows the voltage measured 
-    Serial.print(Voltage,3); // the '3' after voltage allows you to display 3 digits after decimal point
-    Serial.print("\t Amps = "); // shows the voltage measured 
-    Serial.println(Current,3); // the '3' after voltage allows you to display 3 digits after decimal point
-    Serial.print("\n");
-    
     //Append to log string
-    dataString += String(Power);
+    dataString += String(sensorIn);
     
     //Log to SD Card
     File dataFile = SD.open("datalog.txt", FILE_WRITE);
@@ -176,22 +181,73 @@ void recordingState()
       lcd.clear();
       //Display error message
       lcd.print("LOGGING ERROR");
+      lcd.setCursor(0, 1);
+      lcd.print("CHECK SD CARD");
+      //Turn off the Recording LED
+      digitalWrite(startLED,LOW);
       
       //Wait indefinitely
       while(true){};
     }
 
-    // Clear the screen
+    // Clear the screen to display temperature stats
     lcd.clear();
     //Output the Temperatures to the LCD
     lcd.print("FRIDGE: ");
     lcd.print(temperature);
+    lcd.print("C");
     lcd.setCursor(0, 1);
     lcd.print("FREEZER: ");
     lcd.print(temperature2);
+    lcd.print("C");
     
-    // Wait one second between measurements.
-    delay(1000); 
+    // Wait 2.5 second between measurements.
+    delay(2500); 
+
+    //Clear the screen again to display current and power stats.
+    lcd.clear();
+    //Output the Current and Power to the LCD
+    lcd.print("CURRENT: ");
+    lcd.print(AmpsRMS);
+    lcd.print("A");
+    lcd.setCursor(0, 1);
+    lcd.print("Power: ");
+    lcd.print(Power);
+    lcd.print("W");
+
+    //Wait 2.5 second between measurements.
+    delay(2500);
+    
   }
   idleState();
-} 
+}
+ float getVPP()
+{
+  float result;
+  
+  int readValue;             //value read from the sensor
+  int maxValue = 0;          // store max value here
+  int minValue = 1023;          // store min value here
+  
+   uint32_t start_time = millis();
+   while((millis()-start_time) < 1000) //sample for 1 Sec
+   {
+       readValue = analogRead(sensorIn);
+       // see if you have a new maxValue
+       if (readValue > maxValue) 
+       {
+           /*record the maximum sensor value*/
+           maxValue = readValue;
+       }
+       if (readValue < minValue) 
+       {
+           /*record the maximum sensor value*/
+           minValue = readValue;
+       }
+   }
+   
+   // Subtract min from max
+   result = ((maxValue - minValue) * 5.0)/1023.0;
+     
+   return result;
+ }

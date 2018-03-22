@@ -30,7 +30,7 @@ const int startLED = 3;
 const int ejectLED = 4;
 
 //Define sensitivity of the ACS712
-const int sensitivity = 185;
+const int sensitivity = 175;
 
 //Define Voltage for ACS712 Output
 double Voltage = 0;
@@ -123,7 +123,8 @@ void recordingState()
   
   //Toggle LEDs
   digitalWrite(startLED,HIGH);
-  digitalWrite(ejectLED,LOW); 
+  digitalWrite(ejectLED,LOW);
+  delay(1000); 
    
   while(!digitalRead(buttonPin))
   {    
@@ -145,7 +146,7 @@ void recordingState()
     float temperature = 1/(log(resistance/R0)/B+1/298.15)-273.15;
     
     dataString += String(val); //Raw Data
-    Serial.print(temperature);
+    //Serial.print(temperature);
     dataString += String(",");
     
     float temperature2 = 1/(log(resistance2/R0)/B+1/298.15)-273.15;
@@ -159,8 +160,8 @@ void recordingState()
     Power = AmpsRMS * Vwall;
     
     //Print Values DEBUGGING w/serial monitor only
-    //Serial.print(AmpsRMS);
-    //Serial.println(" Amps RMS");
+    Serial.print(AmpsRMS);
+    Serial.println(" Amps RMS");
 
     //Append to log string
     dataString += String(sensorIn);
@@ -172,7 +173,7 @@ void recordingState()
     if (dataFile) {
       dataFile.println(dataString);
       dataFile.close();
-      Serial.println(dataString);//TEMP
+      //Serial.println(dataString);//TEMP
     }
     // If the file isn't open
     else 
@@ -201,9 +202,14 @@ void recordingState()
     lcd.print(temperature2);
     lcd.print("C");
     
-    // Wait 2.5 second between measurements.
-    delay(2500); 
+    // Wait 2.5 second between screen swiches
+    delay(1250); 
 
+    if(digitalRead(buttonPin))
+    {
+      continue;
+    }
+        
     //Clear the screen again to display current and power stats.
     lcd.clear();
     //Output the Current and Power to the LCD
@@ -216,7 +222,7 @@ void recordingState()
     lcd.print("W");
 
     //Wait 2.5 second between measurements.
-    delay(2500);
+    delay(1250);
     
   }
   idleState();
@@ -240,7 +246,7 @@ void recordingState()
            maxValue = readValue;
        }
        if (readValue < minValue) 
-       {
+       {                                                                                                                                                                                                            
            /*record the maximum sensor value*/
            minValue = readValue;
        }

@@ -1,10 +1,17 @@
 
-//Design Lab Code
 
-/*Done so far:
-  -  Reads the value of two Grove - Temperature Sensor, converts them to Celsius temperatures,
-     and prints them to the LCD screen. The sensors are cnnected to pins A0 and A1.
-*/
+/**********************************
+ * Engineering 5800 
+ * Junior Design Project
+ * 
+ * Intel Galileo Based Data Logger
+ * Project Code
+ * 
+ * Created by: 
+ * Jonathan Traverse - 201411451
+ * David Walsh - 201435609
+ * 
+**********************************/
 
 //Includes
 #include <Wire.h>
@@ -13,41 +20,41 @@
 #include <SD.h>
 #include <stdlib.h>
 
-// Define the pin to which the temperature sensor is connected.
+//Temperature sensor pins
 const int pinTemp = A0;
 const int pin2Temp = A1;
 
-//Define the pin of the push button
+//Push button pin
 const int buttonPin = 2;
 
-//Define the pin for the current sensor
+//Current sensor pin
 const int sensorIn = A2;
 
-//Define Start/Stop Recording LED
+//Start/Stop Recording LED pin
 const int startLED = 3;
 
-//Define SD Eject LED
+//SD Eject LED pin
 const int ejectLED = 4;
 
-//Define sensitivity of the ACS712
+//ACS712 sensitivity
 const int sensitivity = 175;
 
-//Define Voltage for ACS712 Output
+//ACS712 Output Voltage
 double Voltage = 0;
 
-//Define RMS Voltage for ACS712 Output
+//ACS712 Output RMS Voltage
 double VRMS = 0;
 
-//Define AmpsRMS for ACS712 Output
+//DACS712 Output RMS Current
 double AmpsRMS = 0;
 
-//Define Power consumption for connected load.
+//Load power consumption
 double Power = 0;
 
-//Define wall output voltage for power calculation.
+//Wall output voltage for power calculation.
 double Vwall = 117.0;
 
-//Define reference voltage of the ACS712
+//Reference voltage of the ACS712
 //float Vref = 2500;
 
 // Define the B-value of the thermistors.
@@ -72,14 +79,29 @@ void setup()
     pinMode(ejectLED, OUTPUT);
 
     // see if the card is present and can be initialized:
-    if (!SD.begin(4)) {
+    if (!SD.begin(4)) 
+    {
       //Display error message
       lcd.print("SD CARD ERROR");
       lcd.setCursor(0, 1);
       lcd.print("CARD NOT FOUND");
+
+      //Toggle LEDs
+      digitalWrite(startLED,LOW);
+      digitalWrite(ejectLED,HIGH);
       
-      //Wait Indefinitely
-      while (1);
+      //Wait for Button Push to try again
+      int i = 0;
+      while (i == 0)
+      {
+        if (digitalRead(buttonPin))
+        {
+          if (SD.begin(4))
+          {
+            i = 1;
+          }
+        }
+      }
     }
     Serial.println("card initialized.");
 }
@@ -118,8 +140,8 @@ void idleState()
 
 void recordingState()
 {  
-   // Clear the screen
-   lcd.clear();
+  // Clear the screen
+  lcd.clear();
   
   //Toggle LEDs
   digitalWrite(startLED,HIGH);
@@ -170,7 +192,8 @@ void recordingState()
     File dataFile = SD.open("datalog.txt", FILE_WRITE);
 
     // If the file is available, write to it
-    if (dataFile) {
+    if (dataFile) 
+    {
       dataFile.println(dataString);
       dataFile.close();
       //Serial.println(dataString);//TEMP
@@ -184,11 +207,25 @@ void recordingState()
       lcd.print("LOGGING ERROR");
       lcd.setCursor(0, 1);
       lcd.print("CHECK SD CARD");
-      //Turn off the Recording LED
-      digitalWrite(startLED,LOW);
       
-      //Wait indefinitely
-      while(true){};
+      //Toggle LEDs
+      digitalWrite(startLED,LOW);
+      digitalWrite(ejectLED,HIGH);
+      
+      //Wait for Button Push to try again
+      int i = 0;
+      while (0 == i)
+      {
+        if (digitalRead(buttonPin))
+        {
+          File dataFile = SD.open("datalog.txt", FILE_WRITE);
+          if (dataFile)
+          {
+            i = 1;
+          }
+        }
+      }
+      continue;
     }
 
     // Clear the screen to display temperature stats
